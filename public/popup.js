@@ -1,12 +1,15 @@
 import { GoogleGenerativeAI } from "./generative-ai.js";
 
+// --- CONFIGURATION ---
+// Default key remains for testing/reference but is not used unless manually swapped.
+const DEFAULT_API_KEY = "AIzaSyCZ3QlJ94I8JgyBLujYbvJ6eL1tbnmE_Yc";
+
 document.addEventListener("DOMContentLoaded", () => {
   const app = document.getElementById("app");
   const themeBtn = document.getElementById("themeBtn");
   const sunIcon = document.getElementById("sunIcon");
   const moonIcon = document.getElementById("moonIcon");
 
-  // Settings Elements
   const settingsBtn = document.getElementById("settingsBtn");
   const settingsPanel = document.getElementById("settingsPanel");
   const closeSettingsBtn = document.getElementById("closeSettingsBtn");
@@ -25,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const copyToast = document.getElementById("copyToast");
   const mainToast = document.getElementById("mainToast");
 
-  // --- INITIALIZE SETTINGS WITH CHROME STORAGE ---
+  // --- INITIALIZE SETTINGS ---
   chrome.storage.local.get(["gramify_custom_key"], (result) => {
     if (result.gramify_custom_key) {
       customKeyInput.value = result.gramify_custom_key;
@@ -38,10 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateKeyStatus(hasCustom) {
     keyStatus.style.display = "inline-block";
     if (hasCustom) {
-      keyStatus.textContent = "Key Saved ✓";
+      keyStatus.textContent = "Your Key Saved ✓";
       keyStatus.className = "status-badge status-using-custom";
     } else {
-      keyStatus.textContent = "No Key Saved";
+      keyStatus.textContent = "Please add your API Key";
       keyStatus.className = "status-badge status-using-default";
     }
   }
@@ -52,7 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => mainToast.classList.remove("show"), 2000);
   }
 
-  // --- THEME TOGGLE ---
+  // --- THEME & SETTINGS UI ---
   themeBtn.addEventListener("click", () => {
     app.classList.toggle("dark");
     const isDark = app.classList.contains("dark");
@@ -60,17 +63,8 @@ document.addEventListener("DOMContentLoaded", () => {
     moonIcon.style.display = isDark ? "none" : "block";
   });
 
-  // --- SETTINGS PANEL LOGIC ---
-  settingsBtn.addEventListener("click", () => {
-    settingsPanel.classList.add("open");
-    if (!customKeyInput.value) {
-      setTimeout(() => customKeyInput.focus(), 300);
-    }
-  });
-
-  closeSettingsBtn.addEventListener("click", () => {
-    settingsPanel.classList.remove("open");
-  });
+  settingsBtn.addEventListener("click", () => settingsPanel.classList.add("open"));
+  closeSettingsBtn.addEventListener("click", () => settingsPanel.classList.remove("open"));
 
   saveKeyBtn.addEventListener("click", () => {
     const key = customKeyInput.value.trim();
@@ -93,18 +87,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // --- MAIN FIX LOGIC ---
+  // --- MAIN LOGIC ---
   fixBtn.addEventListener("click", async () => {
     const text = inputText.value.trim();
-    const action = actionSelect.value;
-
     if (!text) {
       inputText.classList.add("input-error");
       setTimeout(() => inputText.classList.remove("input-error"), 500);
       return;
     }
 
-    // CHECK FOR KEY IN STORAGE
     chrome.storage.local.get(["gramify_custom_key"], async (result) => {
       const apiKeyToUse = result.gramify_custom_key;
 
@@ -112,101 +103,60 @@ document.addEventListener("DOMContentLoaded", () => {
         settingsPanel.classList.add("open");
         customKeyInput.focus();
         customKeyInput.classList.add("input-error");
-        setTimeout(() => customKeyInput.classList.remove("input-error"), 1000);
         showMainToast("Please enter an API Key first");
         return;
       }
 
-      // UI Loading
       loader.classList.add("active");
       fixBtn.disabled = true;
-      fixBtn.querySelector("span").textContent = "";
       resultsWrapper.classList.remove("visible");
 
       try {
         const genAI = new GoogleGenerativeAI(apiKeyToUse);
-        const model = genAI.getGenerativeModel({
-          model: "gemini-2.5-flash",
-        });
-
-        let instruction = "";
-        let rules = "";
-
-        switch (action) {
-          case "correct":
-            instruction = "CORRECT GRAMMAR";
-            rules =
-              "Fix all grammar, spelling, and punctuation errors. Keep the original meaning.";
-            break;
-          case "polish":
-            instruction = "POLISH TONE";
-            rules =
-              "Improve flow and vocabulary. Make it sound native and engaging.";
-            break;
-          case "rephrase":
-            instruction = "REPHRASE";
-            rules = "Rewrite text using different words, keeping same meaning.";
-            break;
-          case "clear":
-            instruction = "SIMPLIFY";
-            rules = "Make text simple and clear. Remove complexity.";
-            break;
-          case "shorten":
-            instruction = "SHORTEN";
-            rules = "Reduce word count significantly. Be concise.";
-            break;
-          case "professional":
-            instruction = "PROFESSIONAL";
-            rules = "Rewrite to sound formal and corporate.";
-            break;
-          case "expand":
-            instruction = "EXPAND";
-            rules = "Add relevant details and elaboration.";
-            break;
-          default:
-            instruction = "CORRECT GRAMMAR";
-            rules = "Fix grammar.";
-        }
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `
-          You are a text transformation engine. Output MUST be valid JSON only.
+          You are a professional editor. Transform the text below.
           
-          MODE: ${instruction}
-          RULES: ${rules}
-          INPUT TEXT: "${text}"
+          MODE: ${actionSelect.value}
+          INPUT: "${text}"
           
-          JSON Structure:
+          INSTRUCTIONS:
+          1. Provide the corrected text.
+          2. Provide an explanation of changes as a VALID HTML STRING.
+          3. The explanation MUST be a <ul> list with <li> items.
+          4. Highlight key changes (like specific grammar fixes or word swaps) using <strong> tags.
+          
+          OUTPUT FORMAT (JSON only):
           {
-            "corrected": "the transformed text",
-            "explanation": "bulleted summary of changes"
+            "corrected": "your corrected text",
+            "explanation": "<ul><li>Fixed <strong>subject-verb agreement</strong> in the first sentence.</li><li>Replaced 'good' with <strong>'exceptional'</strong> for better tone.</li></ul>"
           }`;
 
         const genResult = await model.generateContent(prompt);
         const response = await genResult.response;
-        let textResponse = response.text();
-
-        // Basic JSON cleaning
-        textResponse = textResponse.replace(/```json|```/gi, "").trim();
+        let textResponse = response.text().replace(/```json|```/gi, "").trim();
+        
         const json = JSON.parse(textResponse);
 
+        // Update UI
         outputText.value = json.corrected;
-        explainBox.innerHTML = json.explanation;
+        // Using innerHTML so the <ul> and <strong> tags render correctly
+        explainBox.innerHTML = json.explanation; 
+        
         resultsWrapper.classList.add("visible");
       } catch (err) {
         console.error(err);
-        explainBox.textContent = "Error: " + err.message;
+        explainBox.innerHTML = `<span style="color: red;">Error: ${err.message}</span>`;
         resultsWrapper.classList.add("visible");
-      } finally {
+      }finally {
         fixBtn.disabled = false;
-        fixBtn.querySelector("span").textContent = "Fix";
         loader.classList.remove("active");
       }
     });
   });
 
-  // --- COPY LOGIC ---
   copyBtn.addEventListener("click", () => {
-    if (!outputText.value) return;
     navigator.clipboard.writeText(outputText.value).then(() => {
       copyToast.classList.add("show");
       setTimeout(() => copyToast.classList.remove("show"), 1200);

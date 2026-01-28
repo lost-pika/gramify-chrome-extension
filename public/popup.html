@@ -393,6 +393,30 @@
         border-color: #ef4444 !important;
         box-shadow: 0 0 0 1px #ef4444 !important;
       }
+
+      /* Styling for the point-wise explanations */
+      .explain-box ul {
+        padding-left: 18px;
+        margin: 0;
+      }
+
+      .explain-box li {
+        margin-bottom: 8px;
+        list-status-type: disc;
+      }
+
+      .explain-box strong {
+        color: var(
+          --link-color
+        ); /* Uses your blue theme color for highlights */
+        font-weight: 700;
+      }
+
+      /* Ensure the box scrolls if there are many points */
+      .explain-box {
+        max-height: 200px;
+        overflow-y: auto;
+      }
     </style>
   </head>
   <body>
