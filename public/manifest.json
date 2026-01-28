@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Gramify",
+  "version": "1.0.0",
+  "description": "Improve your writing instantly with Gramify — grammar fixes, rephrasing, clarity boost.",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Gramify",
+    "default_icon": "icon.png"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

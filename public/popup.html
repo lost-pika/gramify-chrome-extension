@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gramify</title>
+    <style>
+      /* --- RESET & BASE STYLES --- */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: #333;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* --- THEME VARIABLES --- */
+      :root {
+        --bg-app: #f9fafb;
+        --bg-header: #ffffff;
+        --text-main: #1f2937;
+        --text-muted: #4b5563;
+        --input-bg: #ffffff;
+        --input-border: #e5e7eb;
+        --primary-btn: #000000;
+        --primary-btn-text: #ffffff;
+        --result-bg: #f0fdf4;
+        --result-border: #bbf7d0;
+        --result-text: #166534;
+        --explain-bg: #ffffff;
+        --overlay-bg: rgba(255, 255, 255, 0.98);
+        --link-color: #2563eb;
+      }
+
+      /* DARK THEME */
+      .app-container.dark {
+        --bg-app: #111827;
+        --bg-header: #1f2937;
+        --text-main: #f9fafb;
+        --text-muted: #9ca3af;
+        --input-bg: #374151;
+        --input-border: #4b5563;
+        --primary-btn: #f9fafb;
+        --primary-btn-text: #000000;
+        --result-bg: #064e3b;
+        --result-border: #065f46;
+        --result-text: #d1fae5;
+        --explain-bg: #1f2937;
+        --overlay-bg: rgba(17, 24, 39, 0.98);
+        --link-color: #60a5fa;
+      }
+
+      /* --- CONTAINER --- */
+      .app-container {
+        width: 360px;
+        height: 600px;
+        background-color: var(--bg-app);
+        color: var(--text-main);
+        border-radius: 12px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative; /* For absolute positioning of settings */
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      /* --- HEADER (Grid for perfect centering) --- */
+      .header {
+        padding: 12px 16px;
+        display: grid;
+        grid-template-columns: 40px 1fr 40px; /* Left button, Title, Right button */
+        align-items: center;
+        background: var(--bg-header);
+        border-bottom: 1px solid var(--input-border);
+        z-index: 10;
+      }
+      .header h1 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 6px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          color 0.2s,
+          background-color 0.2s;
+        width: 32px;
+        height: 32px;
+      }
+      .icon-btn:hover {
+        color: var(--text-main);
+        background-color: var(--input-border);
+      }
+
+      /* Align the right button to the end */
+      .header .icon-btn:last-child {
+        justify-self: end;
+      }
+
+      /* --- CONTENT --- */
+      .content {
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow-y: auto;
+        flex-grow: 1;
+      }
+      .content::-webkit-scrollbar {
+        width: 6px;
+      }
+      .content::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 4px;
+      }
+      .content::-webkit-scrollbar-track {
+        background-color: transparent;
+      }
+
+      label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+
+      textarea,
+      select,
+      input[type="text"] {
+        width: 100%;
+        padding: 14px;
+        background-color: var(--input-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 12px;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        transition: all 0.2s;
+        font-family: inherit;
+        resize: none;
+        outline: none;
+      }
+      textarea:focus,
+      select:focus,
+      input[type="text"]:focus {
+        border-color: var(--text-main);
+        box-shadow: 0 0 0 1px var(--text-main);
+      }
+      #inputText {
+        min-height: 100px;
+      }
+
+      .select-wrapper {
+        position: relative;
+      }
+      .select-wrapper::after {
+        content: "▼";
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        position: absolute;
+        right: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+      select {
+        appearance: none;
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .btn-primary {
+        width: 100%;
+        background-color: var(--primary-btn);
+        color: var(--primary-btn-text);
+        font-weight: 600;
+        padding: 14px;
+        border-radius: 9999px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+      .btn-primary:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(128, 128, 128, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--primary-btn-text);
+        animation: spin 0.8s linear infinite;
+        display: none;
+      }
+      .spinner.active {
+        display: block;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .results-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        opacity: 0.5;
+        pointer-events: none;
+        filter: blur(2px);
+        transition: all 0.4s ease;
+        margin-top: 8px;
+      }
+      .results-wrapper.visible {
+        opacity: 1;
+        pointer-events: auto;
+        filter: blur(0);
+      }
+
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+
+      .btn-copy {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+      }
+      .btn-copy:hover {
+        color: var(--text-main);
+        background-color: var(--input-bg);
+      }
+
+      .output-box {
+        background-color: var(--result-bg);
+        border: 1px solid var(--result-border);
+        color: var(--result-text);
+        font-weight: 500;
+        min-height: 80px;
+      }
+
+      .explain-box {
+        background-color: var(--explain-bg);
+        border: 1px solid var(--input-border);
+        padding: 14px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        min-height: 60px;
+        line-height: 1.5;
+      }
+
+      .toast {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: var(--text-main);
+        color: var(--bg-app);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+        z-index: 60;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+      .relative-container {
+        position: relative;
+      }
+
+      /* --- SETTINGS PANEL --- */
+      .settings-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--overlay-bg);
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .settings-panel.open {
+        transform: translateY(0);
+      }
+
+      .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+      }
+      .settings-header h2 {
+        font-size: 1.25rem;
+        font-weight: 800;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-main);
+        padding: 4px;
+        border-radius: 50%;
+      }
+      .close-btn:hover {
+        background-color: var(--input-border);
+      }
+
+      .settings-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .status-using-custom {
+        background-color: #dbeafe;
+        color: #1e40af;
+      }
+      .status-using-default {
+        background-color: #f3f4f6;
+        color: #4b5563;
+      }
+
+      .key-link {
+        font-size: 0.8rem;
+        color: var(--link-color);
+        text-decoration: none;
+        margin-top: 8px;
+        display: inline-block;
+        font-weight: 500;
+      }
+      .key-link:hover {
+        text-decoration: underline;
+      }
+
+      .input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 1px #ef4444 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container" id="app">
+      <!-- HEADER -->
+      <div class="header">
+        <!-- Settings Button -->
+        <button class="icon-btn" id="settingsBtn" title="Settings">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+            ></path>
+          </svg>
+        </button>
+
+        <h1>Gramify</h1>
+
+        <!-- Dark Mode Toggle -->
+        <button class="icon-btn" id="themeBtn" title="Toggle Dark Mode">
+          <svg
+            id="sunIcon"
+            style="display: none"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg
+            id="moonIcon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- SETTINGS PANEL OVERLAY -->
+      <div id="settingsPanel" class="settings-panel">
+        <div class="settings-header">
+          <h2>Settings</h2>
+          <button class="close-btn" id="closeSettingsBtn">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="settings-content">
+          <div>
+            <label for="customKeyInput">Gemini API Key</label>
+            <input
+              type="text"
+              id="customKeyInput"
+              placeholder="Enter your key (AIzaSy...)"
+            />
+
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              class="key-link"
+            >
+              Get your free API Key here &rarr;
+            </a>
+
+            <div
+              id="keyStatus"
+              class="status-badge"
+              style="display: none; margin-top: 12px"
+            ></div>
+          </div>
+
+          <button id="saveKeyBtn" class="btn-primary" style="margin-top: auto">
+            Save Key
+          </button>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT -->
+      <div class="content">
+        <div>
+          <label for="inputText">Enter Text</label>
+          <textarea
+            id="inputText"
+            placeholder="Enter or copy paste your text to check or correct grammar..."
+          ></textarea>
+        </div>
+
+        <div>
+          <label for="actionSelect">Action</label>
+          <div class="select-wrapper">
+            <select id="actionSelect">
+              <option value="correct">Correct & Clean</option>
+              <option value="polish">Polish Tone</option>
+              <option value="rephrase">Rephrase Smart</option>
+              <option value="clear">Make It Clear</option>
+              <option value="shorten">Shorten</option>
+              <option value="professional">Professional</option>
+              <option value="expand">Expand</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="fixBtn" class="btn-primary">
+          <span>Fix</span>
+          <div id="loader" class="spinner"></div>
+        </button>
+
+        <div id="resultsWrapper" class="results-wrapper">
+          <div>
+            <div class="result-header">
+              <label style="margin: 0; color: var(--result-text)"
+                >Correct text</label
+              >
+              <button id="copyBtn" class="btn-copy" title="Copy to clipboard">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path
+                    d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <div class="relative-container">
+              <textarea
+                id="outputText"
+                class="output-box"
+                readonly
+                placeholder="Here will be your corrected text"
+              ></textarea>
+              <div id="copyToast" class="toast">Copied!</div>
+            </div>
+          </div>
+
+          <div>
+            <label>Explain Fixes</label>
+            <div id="explainBox" class="explain-box">
+              Explanation will appear here...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generic Toast for Messages -->
+      <div id="mainToast" class="toast"></div>
+    </div>
+    <!-- JAVASCRIPT LOGIC -->
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
