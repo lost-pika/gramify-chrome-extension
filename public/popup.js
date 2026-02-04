@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "./generative-ai.js";
 
 /* ------------------ CONFIG ------------------ */
-const DEFAULT_API_KEY = "AIzaSyCZ3QlJ94I8JgyBLujYbvJ6eL1tbnmE_Yc";
+const DEFAULT_API_KEY = "AIzaSyAFBpAEsiruyXxXjY4sexTnxeS2fT8rKYE";
 
 /* ------------------ ACTION TASKS (MATCH HTML VALUES) ------------------ */
 const ACTION_TASKS = {
